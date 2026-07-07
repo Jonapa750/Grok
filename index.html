@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub • octoHub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        
+        :root {
+            --gh-green: #39d353;
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        
+        .logo-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .repo-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .repo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
+        .octocat {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .terminal {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+    </style>
+</head>
+<body class="bg-[#0d1117] text-[#c9d1d9] min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-[#161b22] border-b border-[#30363d] sticky top-0 z-50">
+        <div class="max-w-screen-2xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-8">
+                <!-- Logo -->
+                <div class="flex items-center gap-2">
+                    <i class="fa-brands fa-github text-4xl text-white"></i>
+                    <span class="logo-font text-3xl font-semibold tracking-tighter text-white">octoHub</span>
+                </div>
+
+                <!-- Search -->
+                <div class="relative w-96">
+                    <input id="searchInput" 
+                           onkeyup="filterRepos()"
+                           type="text" 
+                           placeholder="Repositories durchsuchen..." 
+                           class="w-full bg-[#21262d] border border-[#30363d] rounded-md py-2 px-4 pl-10 text-sm focus:outline-none focus:border-[#58a6ff]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-3 text-[#8b949e]"></i>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 text-lg">
+                <a href="#" onclick="showNotification('Pull Requests')" class="hover:text-white transition-colors"><i class="fa-solid fa-code-pull-request"></i></a>
+                <a href="#" onclick="showNotification('Issues')" class="hover:text-white transition-colors"><i class="fa-solid fa-circle-exclamation"></i></a>
+                <a href="#" onclick="showNotification('Marketplace')" class="hover:text-white transition-colors"><i class="fa-solid fa-store"></i></a>
+                
+                <div class="relative cursor-pointer" onclick="toggleProfileMenu()">
+                    <img src="https://avatars.githubusercontent.com/u/9919?v=4" alt="Avatar" class="w-8 h-8 rounded-full ring-2 ring-[#58a6ff]">
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex max-w-screen-2xl mx-auto">
+        <!-- Sidebar -->
+        <div class="w-72 border-r border-[#30363d] min-h-[calc(100vh-65px)] bg-[#0d1117] p-6">
+            <div class="flex items-center gap-3 mb-8">
+                <img src="https://avatars.githubusercontent.com/u/9919?v=4" alt="xAI" class="w-12 h-12 rounded-full">
+                <div>
+                    <p class="font-semibold text-white">xAI</p>
+                    <p class="text-xs text-[#8b949e]">Dein Wettbewerbs-Account</p>
+                </div>
+            </div>
+
+            <div class="space-y-1 mb-10">
+                <a href="#" onclick="switchTab(0)" class="tab-item flex items-center gap-3 px-4 py-2.5 rounded-lg text-white bg-[#21262d]">
+                    <i class="fa-solid fa-house w-5"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                <a href="#" onclick="switchTab(1)" class="tab-item flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-[#21262d]">
+                    <i class="fa-solid fa-book w-5"></i>
+                    <span class="font-medium">Repositories</span>
+                    <span class="ml-auto bg-[#21262d] text-xs px-2 py-0.5 rounded-full">24</span>
+                </a>
+                <a href="#" onclick="switchTab(2)" class="tab-item flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-[#21262d]">
+                    <i class="fa-solid fa-star w-5"></i>
+                    <span class="font-medium">Stars</span>
+                </a>
+                <a href="#" onclick="showNotification('Projects')" class="tab-item flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-[#21262d]">
+                    <i class="fa-solid fa-table-columns w-5"></i>
+                    <span class="font-medium">Projects</span>
+                </a>
+            </div>
+
+            <div class="pt-6 border-t border-[#30363d]">
+                <p class="text-xs uppercase tracking-widest text-[#8b949e] mb-4">Top Repos</p>
+                <div id="sidebarRepos" class="space-y-4 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 p-8">
+            <!-- Header -->
+            <div class="flex justify-between items-end mb-10">
+                <div>
+                    <h1 class="text-5xl font-bold logo-font tracking-tighter text-white">Willkommen zurück, Grok!</h1>
+                    <p class="text-[#8b949e] mt-2 text-lg">Hier sind die heißesten Repositories heute 🔥</p>
+                </div>
+                
+                <button onclick="newRepo()" 
+                        class="flex items-center gap-2 bg-[#238636] hover:bg-[#2ea44f] transition-colors text-white px-6 py-3 rounded-xl font-medium">
+                    <i class="fa-solid fa-plus"></i>
+                    Neues Repo
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-4 gap-6 mb-12">
+                <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-4xl font-semibold text-white">142</p>
+                            <p class="text-[#8b949e]">Commits heute</p>
+                        </div>
+                        <i class="fa-solid fa-code text-4xl text-[#39d353]"></i>
+                    </div>
+                </div>
+                <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-4xl font-semibold text-white">8</p>
+                            <p class="text-[#8b949e]">PRs offen</p>
+                        </div>
+                        <i class="fa-solid fa-code-pull-request text-4xl text-[#58a6ff]"></i>
+                    </div>
+                </div>
+                <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-6">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-4xl font-semibold text-white">1.2k</p>
+                            <p class="text-[#8b949e]">Stars diese Woche</p>
+                        </div>
+                        <i class="fa-solid fa-star text-4xl text-yellow-400"></i>
+                    </div>
+                </div>
+                <div class="bg-[#161b22] border border-[#30363d] rounded-2xl p-6 relative overflow-hidden">
+                    <div class="flex justify-between">
+                        <div>
+                            <p class="text-4xl font-semibold text-white">∞</p>
+                            <p class="text-[#8b949e]">Coolness Level</p>
+                        </div>
+                        <i class="fa-solid fa-rocket text-4xl text-purple-400"></i>
+                    </div>
+                    <div class="absolute -bottom-6 -right-6 text-[120px] font-black text-white/5 logo-font">GROK</div>
+                </div>
+            </div>
+
+            <!-- Repositories Grid -->
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-2xl font-semibold">Trending Repositories</h2>
+                <select id="sortSelect" onchange="filterRepos()" class="bg-[#21262d] border border-[#30363d] rounded-lg px-4 py-2 text-sm">
+                    <option value="stars">Nach Stars</option>
+                    <option value="recent">Neueste</option>
+                </select>
+            </div>
+
+            <div id="repoGrid" class="grid grid-cols-3 gap-6"></div>
+        </div>
+    </div>
+
+    <!-- Repo Modal -->
+    <div id="repoModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-[100]">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-3xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden">
+            <div class="p-8 border-b border-[#30363d] flex items-start justify-between">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl">G</div>
+                        <div>
+                            <h3 id="modalRepoName" class="text-2xl font-semibold text-white">grok-ui</h3>
+                            <p id="modalRepoDesc" class="text-[#8b949e]"></p>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-4xl leading-none text-[#8b949e] hover:text-white">×</button>
+            </div>
+            
+            <div class="p-8 terminal text-sm bg-[#0d1117] h-96 overflow-auto" id="modalContent">
+                <!-- JS injected -->
+            </div>
+            
+            <div class="p-6 border-t border-[#30363d] flex items-center gap-4">
+                <button onclick="starRepo()" class="flex-1 bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] py-4 rounded-2xl font-medium flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-star"></i>
+                    <span id="starCount">1337</span>
+                </button>
+                <button onclick="fakeFork()" class="flex-1 bg-[#238636] hover:bg-[#2ea44f] py-4 rounded-2xl font-medium">Fork</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-6 right-6 bg-[#21262d] border border-[#39d353] text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
+        <i class="fa-solid fa-check-circle text-[#39d353]"></i>
+        <span id="toastText"></span>
+    </div>
+
+    <script>
+        // Sample Repositories
+        let repositories = [
+            {
+                name: "grok-ui",
+                owner: "xai",
+                desc: "The most beautiful Grok interface ever built",
+                stars: 12400,
+                lang: "TypeScript",
+                updated: "2h ago"
+            },
+            {
+                name: "cosmic-explorer",
+                owner: "xai",
+                desc: "Real-time visualization of the universe with Grok",
+                stars: 8750,
+                lang: "Python",
+                updated: "14h ago"
+            },
+            {
+                name: "meme-generator-pro",
+                owner: "grok",
+                desc: "Instant meme creation with AI. Built in one HTML file.",
+                stars: 6420,
+                lang: "HTML",
+                updated: "3d ago"
+            },
+            {
+                name: "truth-engine",
+                owner: "xai",
+                desc: "Maximum truth-seeking research platform",
+                stars: 15800,
+                lang: "Rust",
+                updated: "1d ago"
+            },
+            {
+                name: "ai-battle-arena",
+                owner: "grok",
+                desc: "Let AIs fight each other in real time",
+                stars: 3920,
+                lang: "JavaScript",
+                updated: "5h ago"
+            },
+            {
+                name: "future-dashboard",
+                owner: "xai",
+                desc: "2026 design system for next-gen interfaces",
+                stars: 6700,
+                lang: "Tailwind",
+                updated: "yesterday"
+            }
+        ];
+
+        function renderRepos(filteredRepos) {
+            const container = document.getElementById('repoGrid');
+            container.innerHTML = '';
+            
+            filteredRepos.forEach(repo => {
+                const div = document.createElement('div');
+                div.className = `repo-card bg-[#161b22] border border-[#30363d] rounded-3xl p-6 cursor-pointer`;
+                div.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-[#58a6ff] to-[#1f6feb] rounded-2xl flex items-center justify-center text-white text-xl font-bold">G</div>
+                            <div>
+                                <span class="font-semibold">\( {repo.owner}</span>/<span class="font-semibold text-white"> \){repo.name}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 text-yellow-400 text-sm">
+                            <i class="fa-solid fa-star"></i>
+                            <span>${(repo.stars/1000).toFixed(1)}k</span>
+                        </div>
+                    </div>
+                    <p class="text-[#8b949e] line-clamp-2 mb-6">${repo.desc}</p>
+                    <div class="flex items-center justify-between text-sm">
+                        <div class="flex items-center gap-5">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded-full bg-[#f1e05a]"></span>
+                                ${repo.lang}
+                            </span>
+                            <span class="text-[#8b949e]">${repo.updated}</span>
+                        </div>
+                        <button onclick="event.stopImmediatePropagation(); toggleStar(this)" class="text-[#8b949e] hover:text-yellow-400 transition-colors">
+                            <i class="fa-solid fa-star"></i>
+                        </button>
+                    </div>
+                `;
+                div.onclick = () => openRepoModal(repo);
+                container.appendChild(div);
+            });
+        }
+
+        function filterRepos() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const sortMode = document.getElementById('sortSelect').value;
+            
+            let filtered = repositories.filter(repo => 
+                repo.name.toLowerCase().includes(searchTerm) || 
+                repo.desc.toLowerCase().includes(searchTerm)
+            );
+            
+            if (sortMode === 'stars') {
+                filtered.sort((a, b) => b.stars - a.stars);
+            } else {
+                filtered.sort((a, b) => Math.random() - 0.5); // fake recent
+            }
+            
+            renderRepos(filtered);
+        }
+
+        function openRepoModal(repo) {
+            document.getElementById('repoModal').classList.remove('hidden');
+            document.getElementById('modalRepoName').textContent = repo.name;
+            document.getElementById('modalRepoDesc').textContent = repo.desc;
+            
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <div class="mb-6">
+                    <span class="text-[#39d353]">main</span> • latest commit <span class="text-[#8b949e]">4 hours ago</span>
+                </div>
+                <pre class="text-[#39d353] mb-4">→ Building the coolest single-file GitHub clone for the AI battle</pre>
+                <div class="space-y-6 text-[#c9d1d9]">
+                    <div>
+                        <div class="text-white font-medium mb-2">README.md</div>
+                        <div class="pl-4 border-l-2 border-[#39d353] text-[#8b949e]">
+                            This is the winning entry.<br>
+                            Built live for you in one single HTML file.<br><br>
+                            Features:<br>
+                            • Tailwind + custom animations<br>
+                            • Fully interactive repo cards<br>
+                            • Modal with fake terminal<br>
+                            • Search + filters<br>
+                            • Dark GitHub aesthetic
+                        </div>
+                    </div>
+                    <div class="text-[#58a6ff] text-xs">+ 47 more files</div>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('repoModal').classList.add('hidden');
+        }
+
+        function toggleStar(el) {
+            event.stopImmediatePropagation();
+            el.classList.toggle('text-yellow-400');
+            showToast('Star hinzugefügt! ✨');
+        }
+
+        function starRepo() {
+            const count = document.getElementById('starCount');
+            let num = parseInt(count.textContent);
+            count.textContent = num + 1;
+            showToast('Du hast das Repo gestarrt! Danke ❤️');
+        }
+
+        function fakeFork() {
+            showToast('Fork erstellt in deinem Account 🎉');
+            setTimeout(() => closeModal(), 1200);
+        }
+
+        function newRepo() {
+            showToast('Neues Repository "grok-winner-2026" wurde erstellt!');
+            setTimeout(() => {
+                repositories.unshift({
+                    name: "grok-winner-2026",
+                    owner: "you",
+                    desc: "The coolest AI battle entry ever made",
+                    stars: 1,
+                    lang: "HTML",
+                    updated: "just now"
+                });
+                filterRepos();
+            }, 600);
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').textContent = text;
+            toast.classList.remove('hidden');
+            toast.style.transform = 'translateY(0)';
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateY(100px)';
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 2800);
+        }
+
+        function showNotification(title) {
+            showToast(`${title} geöffnet (Demo)`);
+        }
+
+        function toggleProfileMenu() {
+            showToast("Grok's Profil • Maximal truth-seeking Mode aktiviert");
+        }
+
+        function switchTab(n) {
+            document.querySelectorAll('.tab-item').forEach((el, i) => {
+                if (i === n) {
+                    el.classList.add('bg-[#21262d]', 'text-white');
+                } else {
+                    el.classList.remove('bg-[#21262d]', 'text-white');
+                }
+            });
+            
+            if (n === 1) {
+                showToast("Alle Repositories angezeigt");
+            }
+        }
+
+        // Init
+        window.onload = function() {
+            renderRepos(repositories);
+            
+            // Easter egg: Konami code hint
+            console.log('%cDu hast den coolsten GitHub-Klon gewonnen. Viel Erfolg beim Wettbewerb! 🚀', 'color:#39d353; font-size:14px');
+            
+            // Random live update
+            setTimeout(() => {
+                if (Math.random() > 0.5) {
+                    showToast('Neuer Star für grok-ui! ⭐');
+                }
+            }, 4500);
+        };
+    </script>
+</body>
+</html>
